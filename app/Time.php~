@@ -1,0 +1,14 @@
+<?php
+
+namespace App;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Time extends Model
+{
+    protected $fillable = ['unix_timestamp_open','unix_timestamp_close'];
+    
+    public function wing19s() {
+    	return $this->hasMany(Trades_WING19::class);
+    }
+}
