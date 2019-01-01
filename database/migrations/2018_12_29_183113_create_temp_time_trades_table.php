@@ -20,7 +20,9 @@ class CreateTempTimeTradesTable extends Migration
             $table->integer('bank_code_purchase')->nullable();
             $table->integer('bank_code_sale')->nullable();
             $table->decimal('price',9,2)->nullable();
-            $table->integer('volume')->nullable();
+            $table->integer('qtd')->nullable();
+            $table->integer('qtd_buss')->nullable();
+            $table->integer('qtd_tot')->nullable();
             $table->decimal('bid_price',9,2)->nullable();
             $table->integer('bid_qtd')->nullable();
             $table->decimal('ask_price',9,2)->nullable();

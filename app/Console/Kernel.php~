@@ -24,9 +24,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('miningmarketdata:cron')
-                 ->everyMinute();
-        $schedule->command('echo "Happy New Year!" ')->everyMinute();
+        $schedule->command('miningmarketdata:cron')->everyMinute();        
     }
 
     /**

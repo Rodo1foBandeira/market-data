@@ -17,17 +17,14 @@ class CreateTempTimeTradesTable extends Migration
             $table->increments('id');
             $table->integer('unix_timestamp');
             $table->string('ticker', 6);
-            $table->integer('bank_id_purchase')->unsigned();
-            $table->integer('bank_id_sale')->unsigned();
+            $table->integer('bank_code_purchase')->nullable();
+            $table->integer('bank_code_sale')->nullable();
             $table->decimal('price',9,2)->nullable();
             $table->integer('volume')->nullable();
             $table->decimal('bid_price',9,2)->nullable();
             $table->integer('bid_qtd')->nullable();
             $table->decimal('ask_price',9,2)->nullable();
-            $table->integer('ask_qtd')->nullable();
-            
-            $table->foreign('bank_id_purchase')->references('id')->on('banks');
-            $table->foreign('bank_id_sale')->references('id')->on('banks');
+            $table->integer('ask_qtd')->nullable();            
         });
     }
 
