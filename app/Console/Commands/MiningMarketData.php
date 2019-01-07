@@ -64,32 +64,36 @@ class MiningMarketData extends Command
     	$client = new Client();
     	$nextMin = floatval(gmdate("i.s", time())) + 1;
     	while(floatval(gmdate("i.s", time())) <= $nextMin) {
-    		$res = $client->request('GET', 'https://mdgateway01.easynvest.com.br/iwg/snapshot/?t=webgateway&c=5448062&q=WING19|WDOF19|PETR4|VALE3|ITSA4');
+    		$res = $client->request('GET', 'https://mdgateway01.easynvest.com.br/iwg/snapshot/?t=webgateway&c=5448062&q=WING19|WDOG19|PETR4|VALE3|ITSA4');
     		$retorno = json_decode($res->getBody(), false);
-    		if($retorno->Value[0]->Ps->STSD != 'open')
-    			break;
-			$this->miningData($retorno);		
+    		//if($retorno->Value[0]->Ps->STSD != 'open')
+    		//	break;
+			$this->miningData($this->filterData($retorno));
 		}				
     }
-    
+
+    private function filterData($data){
+        foreach($data->Value as $key => $item){
+            $ticker = $item->S;
+            //if($item->Ps->STSD == 'open')
+                foreach($item->Ts as $k2 => $ts)
+                    if ($this->listTimeTradeExist(new Timetrade($ts->Br, $ts->Sr, $ts->Q, $ts->P, $ts->DT)))
+                        break;
+            array_splice($data->Value[$key]->Ts, $k2);
+        }
+        return $data;
+    }
+
     private function miningData($data){
     	foreach($data->Value as $key => $item){
     		$ticker = $item->S;
-    		if($item->Ps->STSD == 'open')
+    		//if($item->Ps->STSD == 'open')
 	    		foreach($item->Ts as $k2 => $ts){
-	    			//if ($this->listTimeTradeExist(new Timetrade($ts->Br, $ts->Sr, $ts->Q, $ts->P, strtotime($ts->DT))))
-	    				//continue;
-	    			//array_push($this->listTimeTrades, new Timetrade($ts->Br, $ts->Sr, $ts->Q, $ts->P, strtotime($ts->DT)));
-	    			if(TempTimeTrade::where([
-	    					['ticker', '=', $ticker],
-	    					['unix_timestamp', '=', strtotime($ts->DT)],
-	    					['qtd_buss', '=', $item->Ps->TC]
-	    				])->exists())
-	    				continue;
 	    			$temp_times_trades = new TempTimeTrade;
-			    	$temp_times_trades->unix_timestamp = strtotime($ts->DT);
+                    $date = new DateTime($ts->DT, new DateTimeZone('America/Sao_Paulo'));
+			    	$temp_times_trades->unix_timestamp = $date->format('U');
 			    	$temp_times_trades->ticker = $ticker;
-			    	$temp_times_trades->bank_code_purchase = $ts->Br;
+			    	/*$temp_times_trades->bank_code_purchase = $ts->Br;
 			    	$temp_times_trades->bank_code_sale = $ts->Sr;
 			    	$temp_times_trades->price = $ts->P;
 			    	$temp_times_trades->qtd = $ts->Q;
@@ -102,8 +106,9 @@ class MiningMarketData extends Command
 			    	if(count($item->BBP->Ak) > 0) {
 			    		$temp_times_trades->ask_price = $item->BBP->Ak[0]->P;
 			    		$temp_times_trades->ask_qtd = $item->BBP->Ak[0]->P;
-			    	}
+			    	}*/
 			    	$temp_times_trades->save();
+			    	array_push($this->listTimeTradeExist, new Timetrade($ts->Br, $ts->Sr, $ts->Q, $ts->P, $ts->DT));
 	    		}    		
     	}    	
     }
