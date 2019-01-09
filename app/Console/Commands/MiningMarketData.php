@@ -2,11 +2,14 @@
 
 namespace App\Console\Commands;
 
+use App\Error;
 use Illuminate\Console\Command;
 
 use App\TempTimeTrade;
 
-use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Client;
 
 class MiningMarketData extends Command
@@ -34,11 +37,13 @@ class MiningMarketData extends Command
     {
         parent::__construct();
         $this->dateTime = now();
+        $this->client = new Client();
     }
 
     private $listTimeTrades = array();
     private $previousTimeTrades = array();
     private $dateTime;
+    private $client;
 
     /**
      * Execute the console command.
@@ -47,28 +52,45 @@ class MiningMarketData extends Command
      */
     public function handle()
     {
-        $t = new TempTimeTrade;
-        $t->ticker = 'test';
-        $t->unix_timestamp = time();
-        $t->save();
         while (floatval(now()->format('H.i')) < 18.3){
-            $client = new Client();
-            $res = $client->request('GET', 'https://mdgateway01.easynvest.com.br/iwg/snapshot/?t=webgateway&c=5448062&q=WING19|WDOG19');
-            if ($res->getStatusCode() == 200){
-                $data = json_decode($res->getBody(), false);
-                if($data->Value[0]->Ps->STSD != 'open' && floatval(now()->format('H.i')) > 9.05){
-                    break;
-                } else {
+            try {
+                $res = $this->client->get('https://mdgateway01.easynvest.com.br/iwg/snapshot/?t=webgateway&c=5448062&q=WING19|WDOG19');
+                if ($res->getStatusCode() == 200) {
+                    $data = json_decode($res->getBody(), false);
+                    if($data->Value[0]->Ps->STSD != 'open' && floatval(now()->format('H.i')) > 9.05){
+                        break;
+                    } elseif ($data->Value[0]->Ps->STSD != 'open') {
+                        sleep(3);
+                        continue;
+                    }
+                    $data = $this->filterData($data);
+                    $this->cleanPreviousData();
+                    $this->miningData($data);
+                } elseif ($data->Value[0]->Ps->STSD != 'open'){
                     sleep(3);
-                    continue;
                 }
-                $data = $this->filterData($data);
-                $this->cleanPreviousData();
-                $this->miningData($data);
-            } else {
-                sleep(3);
+            }catch (ConnectException $ex){
+                $error = new Error;
+                $error->message = $ex->getMessage();
+                $error->save();
+            }catch (ClientException $ex){
+                $response = $ex->getResponse();
+                $jsonBody = $response->getBody()->getContents();
+                $error = new Error;
+                $error->message = $jsonBody;
+                $error->save();
+            }catch (BadResponseException $ex){
+                $response = $ex->getResponse();
+                $jsonBody = (string) $response->getBody();
+                $error = new Error;
+                $error->message = $jsonBody;
+                $error->save();
+            }catch (Exception $e){
+                $error = new Error;
+                $error->message = $e->getMessage();
+                $error->save();
             }
-            sleep(0.5);
+            sleep(1);
         }
     }
 
