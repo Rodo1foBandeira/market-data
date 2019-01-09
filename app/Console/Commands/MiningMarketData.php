@@ -57,10 +57,13 @@ class MiningMarketData extends Command
                     break;
                 } else {
                     sleep(3);
+                    continue;
                 }
                 $data = $this->filterData($data);
                 $this->cleanPreviousData();
                 $this->miningData($data);
+            } else {
+                sleep(3);
             }
             sleep(0.5);
         }
@@ -76,7 +79,6 @@ class MiningMarketData extends Command
     private function filterData($data){
         foreach($data->Value as $key => $item){
             $ticker = $item->S;
-            //if($item->Ps->STSD == 'open')
             foreach($item->Ts as $k2 => $ts){
                 $date = new \DateTime($ts->DT); // , $this->dateTimeZone
                 if ($this->previousTimeTradeExist($ticker, $ts->Br, $ts->Sr, $ts->Q, $ts->P, $date->format('U'))){
@@ -103,30 +105,29 @@ class MiningMarketData extends Command
         $this->listTimeTrades = array();
     	foreach($data->Value as $key => $item){
     		$ticker = $item->S;
-            //if($item->Ps->STSD == 'open')
-	    		foreach($item->Ts as $k2 => $ts){
-                    $date = new \DateTime($ts->DT); //, $this->dateTimeZone
-			    	$timeTrade = [
-			    	    'unix_timestamp' => $date->format('U'),
-                        'ticker' => $ticker,
-                        'bank_code_purchase' => $ts->Br,
-                        'bank_code_sale' => $ts->Sr,
-                        'price' => $ts->P,
-                        'qtd' => $ts->Q,
-                        'qtd_buss' => $item->Ps->TC, // Business
-                        'qtd_tot' => $item->Ps->TT, // Qtd Total Papers||Contracts
-                    ];
-                    if(count($item->BBP->Bd) > 0) {
-                        $timeTrade['bid_price'] = $item->BBP->Bd[0]->P;
-                        $timeTrade['bid_qtd'] = $item->BBP->Bd[0]->Q;
-                    }
-                    if(count($item->BBP->Ak) > 0) {
-                        $timeTrade['ask_price'] = $item->BBP->Ak[0]->P;
-                        $timeTrade['ask_qtd'] = $item->BBP->Ak[0]->P;
-                    }
-                    array_push($this->listTimeTrades, $timeTrade);
-                    array_push($this->previousTimeTrades, $timeTrade);
-	    		}
+            foreach($item->Ts as $k2 => $ts){
+                $date = new \DateTime($ts->DT); //, $this->dateTimeZone
+                $timeTrade = [
+                    'unix_timestamp' => $date->format('U'),
+                    'ticker' => $ticker,
+                    'bank_code_purchase' => $ts->Br,
+                    'bank_code_sale' => $ts->Sr,
+                    'price' => $ts->P,
+                    'qtd' => $ts->Q,
+                    'qtd_buss' => $item->Ps->TC, // Business
+                    'qtd_tot' => $item->Ps->TT, // Qtd Total Papers||Contracts
+                ];
+                if(count($item->BBP->Bd) > 0) {
+                    $timeTrade['bid_price'] = $item->BBP->Bd[0]->P;
+                    $timeTrade['bid_qtd'] = $item->BBP->Bd[0]->Q;
+                }
+                if(count($item->BBP->Ak) > 0) {
+                    $timeTrade['ask_price'] = $item->BBP->Ak[0]->P;
+                    $timeTrade['ask_qtd'] = $item->BBP->Ak[0]->P;
+                }
+                array_push($this->listTimeTrades, $timeTrade);
+                array_push($this->previousTimeTrades, $timeTrade);
+            }
     	}
     	TempTimeTrade::insert($this->listTimeTrades);
     }
