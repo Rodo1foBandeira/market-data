@@ -33,7 +33,6 @@ class MiningMarketData extends Command
     public function __construct()
     {
         parent::__construct();
-        date_default_timezone_set("America/Sao_Paulo");
         $this->dateTime = now();
     }
 
@@ -48,6 +47,10 @@ class MiningMarketData extends Command
      */
     public function handle()
     {
+        $t = new TempTimeTrade;
+        $t->ticker = 'test';
+        $t->unix_timestamp = time();
+        $t->save();
         while (floatval(now()->format('H.i')) < 18.3){
             $client = new Client();
             $res = $client->request('GET', 'https://mdgateway01.easynvest.com.br/iwg/snapshot/?t=webgateway&c=5448062&q=WING19|WDOG19');
